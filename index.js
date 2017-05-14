@@ -193,11 +193,13 @@ class Hydra extends EventEmitter {
           const dns = require('dns');
           const net = require('net');
           if (this.config.serviceIP && this.config.serviceIP !== '' && net.isIP(this.config.serviceIP) === 0) {
-            dns.lookup(this.config.serviceIP, (err, result) => {
-              this.config.serviceIP = result;
-              this._updateInstanceData();
-              ready();
-            });
+            // dns.lookup(this.config.serviceIP, (err, result) => {
+            //   this.config.serviceIP = result;
+            //   this._updateInstanceData();
+            //   ready();
+            // });
+            this._updateInstanceData();
+            ready();
           } else if (!this.config.serviceIP || this.config.serviceIP === '') {
             let ip = require('ip');
             this.config.serviceIP = ip.address();
