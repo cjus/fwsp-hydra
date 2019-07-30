@@ -10,14 +10,18 @@ const config = {
     servicePort: 0,
     serviceType: 'test',
     redis: {
+      retry_strategy: {
+        maxReconnectionAttempts: 10,
+        maxDelayBetweenReconnections: 3
+      },
       url: '127.0.0.1',
       port: 6379,
-      db: 0
+      db: 15
     }
   }
 };
 
-hydra.init(config.hydra)
+hydra.init(config)
   .then(() => {
     hydra.registerService()
       .then((serviceInfo) => {
@@ -26,4 +30,8 @@ hydra.init(config.hydra)
           console.log(`Received object message: ${message.mid}: ${JSON.stringify(message)}`);
         });
       });
+  })
+  .catch((err) => {
+    console.log('Red service terminating:', err);
+    hydra.shutdown();
   });

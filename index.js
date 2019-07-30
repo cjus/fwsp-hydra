@@ -360,10 +360,12 @@ class Hydra extends EventEmitter {
       const promises = [];
       if (!this.testMode) {
         this._logMessage('error', 'Service is shutting down.');
-        this.redisdb.batch()
-          .expire(`${redisPreKey}:${this.serviceName}:${this.instanceID}:health`, KEY_EXPIRATION_TTL)
-          .expire(`${redisPreKey}:${this.serviceName}:${this.instanceID}:health:log`, ONE_WEEK_IN_SECONDS)
-          .exec();
+        if (this.redisdb) {
+          this.redisdb.batch()
+            .expire(`${redisPreKey}:${this.serviceName}:${this.instanceID}:health`, KEY_EXPIRATION_TTL)
+            .expire(`${redisPreKey}:${this.serviceName}:${this.instanceID}:health:log`, ONE_WEEK_IN_SECONDS)
+            .exec();
+        }
 
         if (this.mcMessageChannelClient) {
           promises.push(this.mcMessageChannelClient.quitAsync());
@@ -406,16 +408,29 @@ class Hydra extends EventEmitter {
       .then((client) => {
         this.redisdb = client;
         client
+          .on('ready', () => {
+            // NOTE: you WONT't get this here, the first time it connects. See redisConnection.connect() why
+            // console.log('[index]: Connection ready to Redis server.');
+            this._logMessage('info', 'Connection ready to Redis server.');
+          })
+          .on('connect', () => {
+            // console.log('[index]: Connected to Redis server.');
+            this._logMessage('info', 'Connected to Redis server.');
+          })
           .on('reconnecting', () => {
-            this._logMessage('error', 'Reconnecting to Redis server...');
+            // console.log('[index]: Reconnecting to Redis server...');
+            this._logMessage('info', 'Reconnecting to Redis server...');
           })
           .on('warning', (warning) => {
-            this._logMessage('error', `Redis warning: ${warning}`);
+            // console.log(`[index]: Redis warning: ${warning}`);
+            this._logMessage('info', `Redis warning: ${warning}`);
           })
           .on('end', () => {
-            this._logMessage('error', 'Established Redis server connection has closed');
+            // console.log('[index]: Established Redis server connection has closed');
+            this._logMessage('info', 'Established Redis server connection has closed');
           })
           .on('error', (err) => {
+            // console.log(`[index]: Redis error: ${err}`);
             this._logMessage('error', `Redis error: ${err}`);
           });
         return client;
@@ -1763,7 +1778,7 @@ class Hydra extends EventEmitter {
       // No port given, get unassigned port from standard ranges
       if (typeof port === 'undefined' || !port || port == 0) {
         port = '1024-65535';
-      } else if (! /-|,/.test(port.toString())) {
+      } else if (!/-|,/.test(port.toString())) {
         // Specific port given, skip free port check
         resolve(port.toString());
         return;
