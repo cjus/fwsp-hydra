@@ -10,16 +10,20 @@ const config = {
     servicePort: 0,
     serviceType: 'test',
     redis: {
+      retry_strategy: {
+        maxReconnectionAttempts: 10,
+        maxDelayBetweenReconnections: 3
+      },
       url: '127.0.0.1',
       port: 6379,
-      db: 0
+      db: 15
     }
   }
 };
 
 let count = 0;
 
-hydra.init(config.hydra)
+hydra.init(config)
   .then(() => {
     hydra.registerService()
       .then((serviceInfo) => {
@@ -38,4 +42,8 @@ hydra.init(config.hydra)
           count += 1;
         }, 2000);
       });
+  })
+  .catch((err) => {
+    console.log('Blue service terminating:', err);
+    hydra.shutdown();
   });
